@@ -8,16 +8,20 @@ var main_state = {
 		this.game.stage.backgroundColor = '#71c5cf';
 		this.game.load.image('bird', 'assets/bird.png');
 		this.game.load.image('pipe', 'assets/pipe.png');
+		this.game.load.audio('jump', 'assets/jump.wav');
     },
 
     create: function() { 
     	this.bird = this.game.add.sprite(100, 245, 'bird');
     	this.bird.body.gravity.y = 1000;
+    	this.bird.anchor.setTo(-0.2, 0.5);
 
     	this.pipes = game.add.group();
     	this.pipes.createMultiple(20, 'pipe');
 
-    	this.score = 0;
+    	this.jump_sound = this.game.add.audio('jump');
+
+    	this.score = -1;
     	var style = { font: "30px Arial", fill: "#ffffff" };
     	this.label_score = this.game.add.text(20, 20, "0", style);
 
@@ -30,11 +34,23 @@ var main_state = {
     update: function() {
 		if(this.bird.inWorld == false)
 			this.restart_game();
-		this.game.physics.overlap(this.bird, this.pipes, this.restart_game, null, this);
+		this.game.physics.overlap(this.bird, this.pipes, this.hit_pipe, null, this);
+
+		if(this.bird.angle < 20)
+			this.bird.angle +=1;
     },
 
     jump: function() {
+    	if(this.bird.alive == false)
+    		return;
+
+    	this.jump_sound.play();
     	this.bird.body.velocity.y = -350;
+
+    	var animation = this.game.add.tween(this.bird);
+    	animation.to({angle: -20}, 100);
+    	animation.start();
+    	//this.game.add.tween(this.bird).to({angle: -20}, 100).start();
     },
 
     restart_game: function() {
@@ -59,6 +75,18 @@ var main_state = {
     		if(i != hole && i != hole+1)
     			this.add_one_pipe(400, i*60+10);
     	};
+    },
+
+    hit_pipe: function() {
+    	if(this.bird.alive == false)
+    		return;
+
+    	this.bird.alive = false;
+    	this.game.time.events.remove(this.timer);
+
+    	this.pipes.forEachAlive(function(p){
+    		p.body.velocity.x = 0;
+    	}, this);
     },
 };
 
